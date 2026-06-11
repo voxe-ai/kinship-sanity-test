@@ -1,0 +1,65 @@
+name: Voxe Deploy to LIVE (overlay)
+
+# Builds the site and overlay-deploys it to Hostinger via FTP.
+#  - workflow_dispatch: manual. Leave target_dir BLANK to deploy to the live
+#    public_html root, or set a subdir (e.g. _voxe_overlaytest/) to dry-run safely.
+#  - repository_dispatch (sanity-publish): fired by the Sanity webhook once
+#    repointed here, so content edits redeploy the live site automatically.
+on:
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: "Remote subdir (BLANK = LIVE public_html root)"
+        required: false
+        default: ""
+  repository_dispatch:
+    types: [sanity-publish]
+
+concurrency:
+  group: voxe-live-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SANITY_PROJECT_ID: u2qzrboc
+          NEXT_PUBLIC_SANITY_DATASET: production
+
+      - name: Verify build output
+        run: |
+          test -d out || { echo "::error::no out/ directory"; exit 1; }
+          for p in index.html rooms.html homa.html explore.html; do
+            test -f "out/$p" || { echo "::error::missing $p"; exit 1; }
+          done
+          echo "Total files: $(find out -type f | wc -l)"
+
+      - name: Copy production .htaccess
+        run: cp .htaccess-production out/.htaccess || echo "no .htaccess-production"
+
+      - name: Install FTP client
+        run: npm i basic-ftp@5 --no-save
+
+      - name: Overlay deploy to Hostinger (no deletes)
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          DEPLOY_DIR: ${{ github.event.inputs.target_dir }}
+        run: node .github/scripts/deploy-overlay.cjs
