@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BookingWidgetProps } from './types';
 import { KINSHIP_COLORS, KINSHIP_FONTS } from '@/lib/config/brand';
@@ -53,10 +53,22 @@ export function BookingWidget({ className = '', onBookingInitiated }: BookingWid
     }
   }, [checkIn]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [isMobile, setIsMobile] = useState(false);
 
-    // Build SiteMinder URL with correct parameter format (from Lauren's booking link)
+  // Detect mobile so the booking link opens in-place on phones (new tab on desktop),
+  // matching the previous UX while still using a standard, trackable link.
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Build the SiteMinder booking URL reactively from the current selection.
+  // Rendering this as a real <a href> (below) lets GA4 + Google Ads cross-domain
+  // auto-linking append _gl / gclid to the outbound URL. A JavaScript form submit
+  // (the previous approach) bypassed that, breaking session + conversion tracking.
+  const bookingUrl = useMemo(() => {
     const baseUrl = 'https://direct-book.com/properties/kinshiplanding';
     const params = new URLSearchParams();
 
@@ -74,19 +86,14 @@ export function BookingWidget({ className = '', onBookingInitiated }: BookingWid
     params.append('trackPage', 'yes');
     if (promo) params.append('promotion_code', promo);
 
-    const bookingUrl = `${baseUrl}?${params.toString()}`;
+    return `${baseUrl}?${params.toString()}`;
+  }, [checkIn, checkOut, guests, rooms, promo]);
 
-    // Track booking initiation for analytics
+  const handleBookingClick = () => {
+    // Track booking initiation. Intentionally does NOT preventDefault — the browser
+    // performs the standard navigation so GA4 / Google Ads can decorate the link.
     if (onBookingInitiated) {
       onBookingInitiated({ checkIn, checkOut, guests, rooms, promo });
-    }
-
-    // Open in same window on mobile for better UX
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      window.location.href = bookingUrl;
-    } else {
-      window.open(bookingUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -120,7 +127,7 @@ export function BookingWidget({ className = '', onBookingInitiated }: BookingWid
         </h3>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         {/* Date inputs - side by side on all devices */}
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -289,9 +296,12 @@ export function BookingWidget({ className = '', onBookingInitiated }: BookingWid
         )}
 
         {/* Submit Button - Clean minimal CTA */}
-        <motion.button
-          type="submit"
-          className="w-full px-6 py-3 bg-[#849e74] text-white font-semibold
+        <motion.a
+          href={bookingUrl}
+          target={isMobile ? '_self' : '_blank'}
+          rel="noopener noreferrer"
+          onClick={handleBookingClick}
+          className="block w-full px-6 py-3 bg-[#849e74] text-white font-semibold text-center
             text-sm uppercase tracking-wider transition-all duration-300"
           whileHover={{
             backgroundColor: KINSHIP_COLORS.greenDark,
@@ -301,8 +311,8 @@ export function BookingWidget({ className = '', onBookingInitiated }: BookingWid
           whileTap={{ scale: 0.98 }}
         >
           Check Availability
-        </motion.button>
-      </form>
+        </motion.a>
+      </div>
     </motion.div>
   );
 }
