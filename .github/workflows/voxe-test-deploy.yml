@@ -1,0 +1,54 @@
+name: Voxe TEST Deploy (throwaway folder)
+
+# Manual-trigger ONLY. Builds the site and FTP-deploys it to a SEPARATE
+# throwaway folder (_voxe_deploytest/) to validate the FTP chain.
+# Touches NONE of the live site files. The action only operates inside
+# server-dir, so it cannot affect anything outside _voxe_deploytest/.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-test-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SANITY_PROJECT_ID: u2qzrboc
+          NEXT_PUBLIC_SANITY_DATASET: production
+
+      - name: Verify build output
+        run: |
+          test -d out || { echo "::error::no out/ directory"; exit 1; }
+          echo "Total files: $(find out -type f | wc -l)"
+          for p in index.html rooms.html homa.html explore.html; do
+            test -f "out/$p" && echo "OK $p" || { echo "::error::MISSING $p"; exit 1; }
+          done
+
+      - name: Copy production .htaccess
+        run: cp .htaccess-production out/.htaccess || echo "no .htaccess-production"
+
+      - name: FTP deploy to THROWAWAY test folder only
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./out/
+          server-dir: _voxe_deploytest/
+          dangerous-clean-slate: false
