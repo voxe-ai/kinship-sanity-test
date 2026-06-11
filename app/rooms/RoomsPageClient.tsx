@@ -225,18 +225,16 @@ export default function RoomsPageClient({ roomsPageData }: RoomsPageClientProps)
 
   // Memoized filtered rooms - recalculates when activeFilter or roomTeasers change
   const filteredRooms = useMemo(() => {
-    const excludeBunks = (room: RoomTeaser) => !room.name.toLowerCase().includes('bunk');
-
     switch (activeFilter) {
       case 'all':
-        return roomTeasers.filter(excludeBunks);
+        return roomTeasers;
       case 'king':
         return roomTeasers.filter(room =>
-          room.name.toLowerCase().includes('king') && excludeBunks(room)
+          room.name.toLowerCase().includes('king')
         );
       case 'queen':
         return roomTeasers.filter(room =>
-          room.name.toLowerCase().includes('queen') && excludeBunks(room)
+          room.name.toLowerCase().includes('queen')
         );
       case 'family':
         return roomTeasers.filter(room =>
@@ -247,7 +245,7 @@ export default function RoomsPageClient({ roomsPageData }: RoomsPageClientProps)
           room.id === 'camp-deck' || room.name.toLowerCase().includes('camp')
         );
       default:
-        return roomTeasers.filter(excludeBunks);
+        return roomTeasers;
     }
   }, [activeFilter, roomTeasers]);
 
