@@ -1,10 +1,8 @@
 name: Voxe Deploy to LIVE (overlay)
 
-# Builds the site and overlay-deploys it to Hostinger via FTP.
-#  - workflow_dispatch: manual. Leave target_dir BLANK to deploy to the live
-#    public_html root, or set a subdir (e.g. _voxe_overlaytest/) to dry-run safely.
-#  - repository_dispatch (sanity-publish): fired by the Sanity webhook once
-#    repointed here, so content edits redeploy the live site automatically.
+# MANUAL deploy only (workflow_dispatch). Every deploy is a deliberate, supervised
+# action. Leave target_dir BLANK to deploy to the live public_html root, or set a
+# subdir (e.g. _voxe_overlaytest/) to dry-run safely. No automatic triggers.
 on:
   workflow_dispatch:
     inputs:
@@ -12,8 +10,6 @@ on:
         description: "Remote subdir (BLANK = LIVE public_html root)"
         required: false
         default: ""
-  repository_dispatch:
-    types: [sanity-publish]
 
 concurrency:
   group: voxe-live-deploy
@@ -50,8 +46,10 @@ jobs:
           done
           echo "Total files: $(find out -type f | wc -l)"
 
-      - name: Copy production .htaccess
-        run: cp .htaccess-production out/.htaccess || echo "no .htaccess-production"
+      - name: Preserve live .htaccess (do NOT deploy one)
+        run: |
+          rm -f out/.htaccess
+          echo "Stripped .htaccess from build output — the hand-managed live .htaccess is left untouched."
 
       - name: Install FTP client
         run: npm i basic-ftp@5 --no-save
