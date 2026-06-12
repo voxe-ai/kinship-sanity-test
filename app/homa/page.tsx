@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getHomaPage } from '@/lib/sanity/queries';
+import { getHomaPage, getHomaMenu } from '@/lib/sanity/queries';
 import { optimizeSanityData } from '@/lib/sanity/imageTransform';
 import { HomaPageClient } from './HomaPageClient';
 
@@ -9,7 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomaPage() {
-  const homaData = optimizeSanityData(await getHomaPage());
+  const [homaData, menuData] = await Promise.all([
+    getHomaPage().then(optimizeSanityData),
+    getHomaMenu(),
+  ]);
 
-  return <HomaPageClient homaData={homaData} />;
+  return <HomaPageClient homaData={homaData} menuData={menuData} />;
 }
