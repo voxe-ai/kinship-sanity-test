@@ -1,0 +1,17 @@
+{
+  "name": "homa-menu-studio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Dedicated Sanity Studio for editing the Homa Café + Bar menu",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "deploy": "sanity deploy"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sanity": "^3.99.0",
+    "styled-components": "^6.1.0"
+  }
+}
