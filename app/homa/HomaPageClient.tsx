@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { KINSHIP_COLORS, KINSHIP_FONTS } from '@/lib/config/brand';
-import { HomaPage as HomaPageData } from '@/lib/sanity/queries';
+import { HomaPage as HomaPageData, type HomaMenuCategory } from '@/lib/sanity/queries';
 
 // Critical above-fold components
 import { HeaderNav } from '@/components/layout/HeaderNav';
@@ -48,6 +48,7 @@ const FIREPLACE_IMAGES_FALLBACK = [
 
 interface HomaPageClientProps {
   homaData: HomaPageData | null;
+  menuData?: HomaMenuCategory[];
 }
 
 const defaultHappyHourSpecials = [
@@ -57,7 +58,7 @@ const defaultHappyHourSpecials = [
   { price: "Half Price", item: "Cauli Pop or Fries" }
 ];
 
-export function HomaPageClient({ homaData }: HomaPageClientProps) {
+export function HomaPageClient({ homaData, menuData }: HomaPageClientProps) {
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [fireplaceImageIndex, setFireplaceImageIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -644,6 +645,7 @@ export function HomaPageClient({ homaData }: HomaPageClientProps) {
         <HomaMenuAccordion
           brunchMenuPdfUrl={homaData?.brunchMenuPdfUrl}
           cateringMenuPdfUrl={homaData?.cateringMenuPdfUrl}
+          menuData={menuData}
         />
 
         {/* 6. FIREPLACE SECTION - Carousel */}
