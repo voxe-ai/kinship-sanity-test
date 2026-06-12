@@ -8,9 +8,12 @@ import { homaMenuData, type MenuCategory } from './homa-menu-data';
 interface HomaMenuAccordionProps {
   brunchMenuPdfUrl?: string;
   cateringMenuPdfUrl?: string;
+  menuData?: MenuCategory[];
 }
 
-export function HomaMenuAccordion({ brunchMenuPdfUrl, cateringMenuPdfUrl }: HomaMenuAccordionProps) {
+export function HomaMenuAccordion({ brunchMenuPdfUrl, cateringMenuPdfUrl, menuData }: HomaMenuAccordionProps) {
+  // Sanity-driven menu (editable in the Homa Menu studio), with the bundled menu as a safe fallback.
+  const categories = menuData && menuData.length > 0 ? menuData : homaMenuData;
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
   const toggleCategory = (categoryId: string) => {
@@ -94,7 +97,7 @@ export function HomaMenuAccordion({ brunchMenuPdfUrl, cateringMenuPdfUrl }: Homa
 
         {/* Menu Categories Accordion */}
         <div className="space-y-3 max-w-4xl mx-auto">
-          {homaMenuData.map((category, index) => (
+          {categories.map((category, index) => (
             <div
               key={category.id}
               className="border-2 bg-white"
