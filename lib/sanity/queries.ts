@@ -951,6 +951,33 @@ export async function getMenuItems(): Promise<MenuItem[]> {
 }
 
 // ============================================
+// HOMA MENU (editable via the dedicated Homa Menu studio)
+// ============================================
+export interface HomaMenuItem {
+  name: string
+  description?: string
+  price: string
+  addOns?: string
+}
+export interface HomaMenuCategory {
+  id: string
+  title: string
+  subtitle?: string
+  addOns?: string
+  items: HomaMenuItem[]
+}
+export async function getHomaMenu(): Promise<HomaMenuCategory[]> {
+  const query = `*[_id == "homaMenu"][0].categories[]{
+    "id": categoryId,
+    title,
+    subtitle,
+    addOns,
+    "items": items[]{ name, description, "price": coalesce(price, ""), addOns }
+  }`
+  return (await client.fetch<HomaMenuCategory[] | null>(query)) || []
+}
+
+// ============================================
 // ABOUT PAGE (Complete - all content editable)
 // ============================================
 export interface AboutPage {
