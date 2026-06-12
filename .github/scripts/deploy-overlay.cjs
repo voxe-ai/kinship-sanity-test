@@ -1,28 +1,25 @@
-// Voxe overlay deploy: upload the built site (out/) to Hostinger over FTP.
-// SAFETY: ONLY uploads/overwrites and creates folders. NEVER deletes anything
-// (so the Google verification file, live .htaccess, .git, etc. are untouched).
-// Runs on Linux CI (handles the colon-in-folder-name Windows can't).
+// Voxe overlay deploy: upload built site (out/) to Hostinger over FTP.
+// SAFETY: ONLY uploads/overwrites + creates folders. NEVER deletes anything.
+// Robust against flaky Hostinger FTP: retries the whole connect+upload up to 4x
+// with backoff. Idempotent (overlay re-upload), so retries are safe.
 const ftp = require('basic-ftp');
 
 const target = (process.env.DEPLOY_DIR || '').trim(); // blank = LIVE public_html root
+const MAX_ATTEMPTS = 4;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function connect() {
-  const client = new ftp.Client(0); // 0 = no idle timeout; the 30-min job is the backstop
+async function deployOnce() {
+  const client = new ftp.Client(0); // no idle timeout; job timeout is the backstop
   client.ftp.verbose = false;
-  await client.access({
-    host: process.env.FTP_SERVER,
-    port: 21,
-    user: process.env.FTP_USERNAME,
-    password: process.env.FTP_PASSWORD,
-    secure: false,
-  });
-  try { client.ftp.socket.setKeepAlive(true, 10000); } catch {}
-  return client;
-}
-
-(async () => {
-  let client = await connect();
   try {
+    await client.access({
+      host: process.env.FTP_SERVER,
+      port: 21,
+      user: process.env.FTP_USERNAME,
+      password: process.env.FTP_PASSWORD,
+      secure: false,
+    });
+    try { client.ftp.socket.setKeepAlive(true, 10000); } catch {}
     console.log('Connected. Root cwd:', await client.pwd());
     if (target && target !== '/') {
       await client.ensureDir(target);
@@ -30,24 +27,29 @@ async function connect() {
     } else {
       console.log('Deploying into LIVE public_html root.');
     }
-
     console.log('Uploading out/ (overlay — no deletes)...');
-    try {
-      await client.uploadFromDir('out');
-    } catch (e) {
-      console.log('Upload interrupted (' + e.message + ') — reconnecting and retrying once...');
-      client.close();
-      client = await connect();
-      if (target && target !== '/') await client.ensureDir(target);
-      await client.uploadFromDir('out'); // idempotent overlay re-upload
-    }
-
+    await client.uploadFromDir('out');
     const here = (await client.list()).map((f) => f.name);
     for (const k of ['index.html', 'rooms.html', 'homa.html']) {
       console.log((here.includes(k) ? 'OK   ' : 'MISS ') + k);
     }
-    console.log('Overlay deploy complete.');
   } finally {
     client.close();
+  }
+}
+
+(async () => {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await deployOnce();
+      console.log(`Overlay deploy complete (attempt ${attempt}).`);
+      return;
+    } catch (e) {
+      console.log(`Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${e.message}`);
+      if (attempt === MAX_ATTEMPTS) throw e;
+      const wait = attempt * 20000; // 20s, 40s, 60s
+      console.log(`Waiting ${wait / 1000}s before retry...`);
+      await sleep(wait);
+    }
   }
 })().catch((e) => { console.error('DEPLOY ERROR:', e.message); process.exit(1); });
