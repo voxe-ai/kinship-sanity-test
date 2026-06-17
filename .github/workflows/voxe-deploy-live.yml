@@ -1,8 +1,10 @@
 name: Voxe Deploy to LIVE (overlay)
 
-# MANUAL deploy only (workflow_dispatch). Every deploy is a deliberate, supervised
-# action. Leave target_dir BLANK to deploy to the live public_html root, or set a
-# subdir (e.g. _voxe_overlaytest/) to dry-run safely. No automatic triggers.
+# Deploys the built site to Hostinger via FTP.
+#  - workflow_dispatch: manual run (target_dir blank = live public_html root;
+#    set a subdir like _voxe_test/ for a safe dry-run).
+#  - repository_dispatch (sanity-publish): fired by the Sanity webhook so a client
+#    "Publish" in Sanity auto-rebuilds + redeploys the live site (always live root).
 on:
   workflow_dispatch:
     inputs:
@@ -10,6 +12,8 @@ on:
         description: "Remote subdir (BLANK = LIVE public_html root)"
         required: false
         default: ""
+  repository_dispatch:
+    types: [sanity-publish]
 
 concurrency:
   group: voxe-live-deploy
