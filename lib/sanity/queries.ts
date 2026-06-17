@@ -1728,3 +1728,37 @@ export async function getAccessibilityPage(): Promise<AccessibilityPage | null> 
 }
 
 // Press mentions are now part of Homepage.pressLogos - no separate document type
+
+// ============================================
+// EXPLORE SECTIONS (generic, editable via kinship-homa-menu.sanity.studio)
+// ============================================
+export interface ExploreSectionItem {
+  name: string
+  description?: string
+  detail?: string
+  link?: string
+  linkText?: string
+  imageUrl?: string
+}
+export interface ExploreSection {
+  title: string
+  intro?: string
+  breakImageUrl?: string
+  items: ExploreSectionItem[]
+}
+export interface ExploreSectionsDoc {
+  intro?: string
+  sections: ExploreSection[]
+}
+export async function getExploreSections(): Promise<ExploreSectionsDoc | null> {
+  const query = `*[_id == "exploreSections"][0]{
+    intro,
+    "sections": sections[]{
+      title,
+      intro,
+      "breakImageUrl": breakImage.asset->url,
+      "items": items[]{ name, description, detail, link, linkText, "imageUrl": image.asset->url }
+    }
+  }`
+  return client.fetch(query)
+}
