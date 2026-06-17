@@ -148,6 +148,15 @@ export default function RootLayout({
           });
         ` }} />
 
+        {/* Triptease (booking conversion platform) — loads site-wide */}
+        <script
+          defer
+          async
+          crossOrigin="anonymous"
+          type="text/javascript"
+          src="https://onboard.triptease.io/bootstrap.js?integrationId=01KAKG32JBFC3ZZ6658V4YYHAP"
+        />
+
         {/* Unregister any stale service workers */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
