@@ -1,10 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export function CallToBook() {
-  const [visible, setVisible] = useState(false); // Disabled for now
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -17,8 +15,7 @@ export function CallToBook() {
       aria-hidden={!isClient}
       className="sm:hidden fixed inset-x-0 bottom-0 z-50 pointer-events-none"
     >
-      {visible && (
-        <div className="pointer-events-auto px-3 pb-3 safe-area-bottom">
+      <div className="pointer-events-auto px-3 pb-3 safe-area-bottom">
           <div className="mx-auto max-w-[640px]">
             <a
               href="https://direct-book.com/properties/kinshiplanding"
@@ -48,7 +45,6 @@ export function CallToBook() {
             </a>
           </div>
         </div>
-      )}
     </div>
   );
 }
