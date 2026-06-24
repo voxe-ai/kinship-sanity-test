@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { BackgroundMedia } from './BackgroundMedia';
 import { BookingWidget } from './BookingWidget';
 import { InlineTestimonials } from './InlineTestimonials';
-import { KINSHIP_FONTS } from '@/lib/config/brand';
+import { KINSHIP_COLORS, KINSHIP_FONTS } from '@/lib/config/brand';
 import { transformSanityUrl } from '@/lib/sanity/imageTransform';
 import { content } from '@/content/copy';
 import type { PortableTextBlock } from '@portabletext/types';
@@ -99,6 +99,27 @@ export function HeroSection({ headline, subheadline, reviews, heroVideoUrl, hero
               {/* Right Side: Booking Widget - positioned right with breathing room */}
               <div className="flex-1 lg:flex-none flex justify-center lg:justify-end">
                 <div className="w-full max-w-md lg:max-w-none">
+                  {/* Mobile/tablet: simple, GA4-friendly Book Now button above the fold.
+                      Desktop shows the full booking widget below instead. */}
+                  <a
+                    href="https://direct-book.com/properties/kinshiplanding"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Book your stay at Kinship Landing"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && (window as any).gtag) {
+                        (window as any).gtag('event', 'mobile_book_click', { location: 'hero' });
+                      }
+                    }}
+                    className="lg:hidden block w-full text-center px-6 py-4 text-base font-bold uppercase tracking-wider text-white transition-transform duration-200 active:scale-[0.98]"
+                    style={{
+                      backgroundColor: KINSHIP_COLORS.green,
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+                      fontFamily: KINSHIP_FONTS.body,
+                    }}
+                  >
+                    Book Now
+                  </a>
                   {/* Desktop Booking Widget - pulled further from right */}
                   <div className="hidden lg:block lg:mr-40">
                     <BookingWidget
